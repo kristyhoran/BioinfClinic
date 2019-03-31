@@ -19,7 +19,14 @@ OR in terminal window
 
 `pip3 install jupyter`
 
-## Introduction to pandas.
+**Get this repo**
+
+I will update the repo after clinic if we make any changes.
+
+`git clone https://github.com/kristyhoran/BioinfClinic.git`
+
+
+## Introduction to `pandas`.
 
 ### What is a dataframe?
 
