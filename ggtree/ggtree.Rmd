@@ -1,0 +1,115 @@
+---
+title: "ggtree example"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# install.packages("devtools")
+# devtools::install_github("GuangchuangYu/ggtree")
+# install.packages("ggplot2")
+# devtools::install_github("andersgs/harrietr")
+# BiocInstaller::biocLite("ggtree")
+# install.packages("readr")
+# install.packages("tidyverse")
+# install.packages("ape")
+# install.packages("rjson")
+library(paletteer)
+library(harrietr)
+library(ggtree)
+library(readr)
+library(ape)
+library(ggplot2)
+library(tidyverse)
+
+```
+
+
+
+```{r}
+#  get the tree file
+tree <- read.tree("~/Desktop/MDU/presentations/bioinfoclinic/ggtree/dummy_tree.treefile")
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# get metadata
+meta <- read_delim("~/Desktop/MDU/presentations/bioinfoclinic/ggtree/metatable.tab", delim = "\t")
+meta
+```
+
+```{r}
+# get alignment for scale bar HarrietR
+core <- read.dna(file = "~/Desktop/MDU/presentations/bioinfoclinic/ggtree/core.aln", format = "fasta")
+# calculate distance and evol distance of the data that was used to generate the tree.
+dist_df <- dist_long(aln = core, order = tree$tip.label, tree = tree, dist = "N")
+# in theory this should be almost a linear relationship - particularly at shorter distances
+m1 <- lm(evol_dist ~ dist, data = dist_df)
+#  use the predict function to get the length of the bar for 10 snps
+tree_scale <- predict(m1, newdata = data.frame(dist = c(10)))
+tree_scale
+```
+
+```{r}
+# simply make a tree with no metadata
+p <- ggtree(tree)
+
+p
+```
+
+```{r}
+# the information for the tree is contained in a dataframe
+p$data
+
+```
+
+```{r}
+
+# add labels
+p + geom_tiplab(aes(label = label))
+```
+```{r}
+# This is ok but really not very interesting or informative - lets add some color
+
+p <- ggtree(tree) %<+% meta
+p$data
+```
+```{r}
+p + geom_tiplab(aes(label = label)) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left")
+```
+
+```{r}
+# alter the axis so stuff doesn't get cut off
+p + geom_tiplab(aes(label = label)) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left") + xlim(0,0.00005)
+
+```
+```{r}
+#  and a scale bar!!
+p + geom_tiplab(aes(label = label)) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left") + xlim(0,0.00005) + annotate(geom = 'segment', x = 0, xend = (tree_scale) , y = 0, yend = 0) +   annotate(geom = 'text', label = '~ 10 SNPs', x = 0.000001, y =-.5, size = 4) 
+```
+
+```{r}
+# can also make it a circular tree..
+p <- ggtree(tree, layout = "circular") %<+% meta
+p + geom_tiplab(aes(label = label)) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left")
+
+```
+```{r}
+p + geom_tiplab2(aes(label = label), size =3) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left") + ylim(0,12)
+
+```
+```{r}
+ # add in other info... gheatmap, a ggttree function that is a bit (alot) weird
+# IMPORTANT Although ggtree itself can handle tibbles.. gheatmap does not -- do the dataframe you use to annotate must be an ACTUAL dataframe
+heat <- as.data.frame(meta)
+row.names(heat) <- heat$Isolate
+heat <- heat[c(3),drop=FALSE]
+heat$`Dr (1st appearance)` <- as.factor(heat$`Dr (1st appearance)`)
+```
+
+```{r}
+p <- ggtree(tree) %<+% meta
+
+p %>% gheatmap(heat, width = .5, colnames_position = "top", offset = .000005) + geom_tiplab(aes(label = label), size =3) + geom_tippoint(aes(color = Origin)) + theme(legend.position = "left") + xlim(0,0.00005) + annotate(geom = 'segment', x = 0, xend = (tree_scale) , y = 0, yend = 0) +   annotate(geom = 'text', label = '~ 10 SNPs', x = 0.000001, y =-.5, size = 4) 
+```
+
